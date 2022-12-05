@@ -1,0 +1,89 @@
+package com.load.controller;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.Date;
+import java.util.List;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.load.entity.Load;
+import com.load.service.LoadService;
+
+import lombok.extern.slf4j.Slf4j;
+
+@RestController
+@Slf4j
+@RequestMapping("/truckload")
+public class LoadController {
+
+	@Autowired
+	private LoadService loadService;
+
+	@GetMapping("/home")
+	public String home() {
+		log.info("####Inside Home###");
+		return "Home";
+	}
+
+	@PostMapping("/admin/load")
+	public Load saveLoad(@Valid @RequestBody Load load) {
+
+		log.info("###loadController - A- createload####");
+
+		return loadService.saveLoad(load);
+
+	}
+
+	@GetMapping("/admin/allLoad")
+	public List<Load> getAllLoadDetails() {
+		log.info("inside Load controller to fetch  all load");
+		List<Load> listOfLoad = loadService.getAllLoad();
+		log.info("#####load list length" + listOfLoad.size());
+		return listOfLoad;
+	}
+
+	@GetMapping("/driver/allLoad")
+	public List<Load> LoadNotBooked() {
+		log.info("Load  controller##### get not booked load");
+		List<Load> listOfLoad = loadService.getLoadNotBooked();
+		log.info("#####load list length" + listOfLoad.size());
+
+		return listOfLoad;
+	}
+
+	@GetMapping("/search")
+	public List<Load> searchLoad(@RequestParam("pickUpDate") String pickUpDate,
+			@RequestParam("pickUpLocation") String pickUpLocation, @RequestParam("dropDate") String dropDate,
+			@RequestParam("dropLocation") String dropLocation, @RequestParam("itemType") String itemType,@PathVariable("userId") int userId
+	// @RequestParam(value = "authorName", required = false) String bookAuthor
+	) throws ParseException {
+		
+		log.info("###truck Load controller##### search load");
+
+		List<Load> listOfBooks = loadService.searchLoads(pickUpDate, pickUpLocation, dropDate, dropLocation, itemType,userId);
+		// response = new ResponseEntity<>(listOfBooks, HttpStatus.OK);
+		return listOfBooks;
+	}
+	
+	@PostMapping({"/driver/{loadId}/bookload/{driverId}"})
+	  public ResponseEntity<?> bookLoad(@PathVariable Integer loadId, @PathVariable Integer driverId) {
+	       log.info("###########Load Controller -R-booking load#########");
+	       return this.loadService.bookLoad(loadId,driverId);
+	   }
+
+}

@@ -1,0 +1,8 @@
+package com.load.entity;
+
+public class UserResponse {
+	
+	private String message;
+	private String code;
+
+}

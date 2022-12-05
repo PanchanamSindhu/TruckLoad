@@ -1,0 +1,12 @@
+package com.load.entity;
+
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class UserResponse {
+	
+	private String message;
+	private String code;
+
+}

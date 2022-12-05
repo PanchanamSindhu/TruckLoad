@@ -1,0 +1,11 @@
+package com.user.entity;
+
+public class UserResponse {
+	
+
+	private String message;
+	private String code;
+	private String token;
+	private String uRole;
+
+}

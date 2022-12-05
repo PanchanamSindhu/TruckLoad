@@ -1,0 +1,104 @@
+package com.load.service;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.load.entity.Load;
+import com.load.entity.UserResponse;
+import com.load.repository.LoadRepository;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class LoadServiceImpl implements LoadService {
+
+	@Autowired
+	private LoadRepository loadRepo;
+
+	@Override
+	public Load saveLoad(@Valid Load load) {
+		log.info("#####LoadService Implementation save Load ####");
+		// TODO Auto-generated method stub
+		return loadRepo.save(load);
+	}
+
+	@Override
+	public List<Load> getAllLoad() {
+		log.info("#####LoadService Implementation#### get Load");
+		// TODO Auto-generated method stub
+		return loadRepo.findAll();
+	}
+
+	@Override
+	public List<Load> getLoadNotBooked() {
+		log.info("#####LoadService Implementation#### get Load not booked");
+		List<Load> listOfload = new ArrayList<>();
+		log.info("inside Load service ");
+		List<Load> loadList = loadRepo.findAll();
+		log.info("Load list length " + loadList.size());
+		for (Load l : loadList) {
+			if (l.getBookingStatus().equals("NOT BOOKED")) {
+				listOfload.add(l);
+
+			}
+		}
+		log.info("#### load not booked list length#### " + listOfload.size());
+		return listOfload;
+	}
+
+	@Override
+	public List<Load> searchLoads(String pickUpDate, String pickUpLocation, String dropDate, String dropLocation,
+			String itemType) throws ParseException {
+		log.info("#####LoadService Implementation#### search load admin");
+		List<Load> listOfLoad = new ArrayList<>();
+		List<Load> allLoadList = loadRepo.findAll();
+		log.info("book list count " + allLoadList.size());
+		log.info("pickup :" + pickUpDate);
+		SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
+		Date dateofPickUp;
+		Date dateofDrop;
+
+		dateofPickUp = sdformat.parse(pickUpDate.toString());
+		dateofDrop = sdformat.parse(dropDate.toString());
+		log.info("### pickup date ####" + dateofPickUp + "Drop  " + dateofDrop);
+		log.info("### pickup date ####" + pickUpDate + "Drop  " + dropDate);
+		for (Load load : allLoadList) {
+			if ((sdformat.parse(load.getPickUpDate().toString()).compareTo(dateofPickUp) == 0)
+					&& load.getPickUpLocation().equalsIgnoreCase(pickUpLocation)
+					&& (sdformat.parse(load.getDropDate().toString()).compareTo(dateofDrop) == 0)
+					&& load.getDropLocation().equalsIgnoreCase(dropLocation)) {
+
+				listOfLoad.add(load);
+			}
+		}
+
+		return listOfLoad;
+	}
+
+	@Override
+	public ResponseEntity<?> bookLoad(Integer loadId, Integer driverId) {
+		
+		log.info("#####LoadService Implementation#### book load ");
+		Load load=loadRepo.findById(loadId).get();
+		 UserResponse userResponse=new UserResponse();
+		 if(load.getDriverId() == null && load.getBookingStatus().equalsIgnoreCase("NOT BOOKED")) {
+			 
+		 }
+		 
+		
+		return null;
+	}
+
+}

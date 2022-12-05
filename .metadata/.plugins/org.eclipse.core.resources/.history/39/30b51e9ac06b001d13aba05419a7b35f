@@ -1,0 +1,21 @@
+package com.load.repository;
+
+import java.time.LocalDate;
+
+import javax.transaction.Transactional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.load.entity.Load;
+
+@Repository
+@Transactional
+public interface LoadRepository extends JpaRepository<Load, Integer>{
+
+	void bookLoad(Integer driverId, LocalDate now, String string);
+	
+	 @Query(value = "UPDATE subscribe_book SET book_subscribe=?4, subscription_date=?3 WHERE book_id=?2 and user_id=?1",nativeQuery = true)
+	    Integer bookSubscribeU(Integer aId,Integer bookId, LocalDate localDate,String status);
+
+}

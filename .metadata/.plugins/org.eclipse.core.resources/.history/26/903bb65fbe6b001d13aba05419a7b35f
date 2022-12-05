@@ -1,0 +1,13 @@
+package com.load.entity;
+
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class UserResponse {
+	
+	private String message;
+	private String code;
+
+}

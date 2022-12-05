@@ -1,0 +1,112 @@
+package com.user.service;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.user.entity.Load;
+import com.user.entity.User;
+import com.user.repository.UserRepository;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Service
+@Slf4j
+public class UserServiceImpl implements UserService {
+
+	@Autowired
+	private UserRepository userRepo;
+
+	@Autowired
+	private RestTemplate restTemplate;
+
+	@Override
+	public User registerUser(User user) {
+		// TODO Auto-generated method stub
+		int age = Period.between(user.getDateOfBirth(), LocalDate.now()).getYears();
+		return null;
+	}
+
+	@Override
+	public Load saveLoad(Load load) {
+		// TODO Auto-generated method stub
+		log.info("###UserServiceImplementation - LoadCreation###");
+		//http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091
+		//http://localhost:8091/truckload/admin/load
+		return restTemplate.postForObject("http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/admin/load", load, Load.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Load> getAllLoad(int userId) {
+		log.info("###UserServiceImplementation - Get Load details ###");
+		Optional<User> user = userRepo.findById(userId);
+
+		List<Load> loadList = new ArrayList<Load>();
+		if (user.isPresent() && user.get().getRole().equals("ADMIN")) {
+			log.info("###UserServiceImplementation - USER Role-" + user.get().getRole());
+			loadList = restTemplate.getForObject("http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/admin/allLoad", List.class);
+
+		} else if (user.isPresent() && user.get().getRole().equals("DRIVER")) {
+			log.info("###UserServiceImplementation - USER Role-" + user.get().getRole());
+			loadList = restTemplate.getForObject("http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/driver/allLoad", List.class);
+
+		}
+		return loadList;
+
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Load> searchLoads(String pickUpDate, String pickUpLocation, String dropDate, String dropLocation,
+			String itemType,int userId) {
+		// TODO Auto-generated method stub
+		log.info("###UserServiceImplementation  search load ##### " + "pickup date :"+pickUpDate+ " pickupLocation :"+pickUpLocation);
+		Optional<User> user = userRepo.findById(userId);
+		List<Load> response = new ArrayList<Load>();
+		if(user.isPresent() && user.get().getRole().equals("ADMIN")) {
+			response = restTemplate.getForObject(
+					"http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/search?pickUpDate=" + pickUpDate + "&pickUpLocation=" + pickUpLocation
+							+ "&dropDate=" + dropDate + "&dropLocation=" + dropLocation + "&itemType=" + itemType,
+					List.class);
+			
+		}else if (user.isPresent() && user.get().getRole().equals("DRIVER")) {
+			response = restTemplate.getForObject(
+					"http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/search/driver?pickUpDate=" + pickUpDate + "&pickUpLocation=" + pickUpLocation
+							+ "&dropDate=" + dropDate + "&dropLocation=" + dropLocation + "&itemType=" + itemType,
+					List.class);
+			
+		}
+		
+		return response;
+
+	}
+
+	@Override
+	public ResponseEntity<?> bookLoad(Integer loadId, Integer driverId) {
+		log.info("###UserService Load Booking####");
+		String s=restTemplate.postForObject("http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/driver/"+loadId+"/bookload/"+driverId,"", String.class);
+		
+		return new ResponseEntity<>(s,HttpStatus.OK);
+	}
+
+	@Override
+	public ResponseEntity<?> cancelLoad(Integer loadId) {
+		log.info("###UserService Load Canceling####");
+		
+		String s=restTemplate.postForObject("http://ec2-13-235-135-181.ap-south-1.compute.amazonaws.com:8091/truckload/admin/"+loadId,"", String.class);
+		return new ResponseEntity<>(s,HttpStatus.OK);
+	}
+
+}

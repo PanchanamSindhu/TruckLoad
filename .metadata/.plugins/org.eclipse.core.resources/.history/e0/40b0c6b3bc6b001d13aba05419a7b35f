@@ -1,0 +1,173 @@
+package com.user.controller;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.Date;
+import java.util.List;
+
+import javax.validation.Valid;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.user.entity.Load;
+import com.user.entity.LoginRequest;
+import com.user.entity.MessageRespone;
+import com.user.entity.User;
+import com.user.repository.UserRepository;
+import com.user.security.JwtUtils;
+import com.user.service.UserServiceImpl;
+
+import lombok.extern.slf4j.Slf4j;
+
+@RestController
+@Slf4j
+@RequestMapping("/user")
+public class UserController {
+
+	@Autowired
+	private AuthenticationManager authenticationManager;
+
+	@Autowired
+	private UserServiceImpl userServiceImpl;
+
+	@Autowired
+	private UserRepository userRepo;
+
+	@Autowired
+	PasswordEncoder passwordEncoder;
+
+	@Autowired
+	JwtUtils jwtUtils;
+
+	public UserController() {
+	}
+
+	@GetMapping("/home")
+	public String home() {
+		return "Home";
+	}
+	
+	@PostMapping("/signup")
+	public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {
+
+		if (Boolean.TRUE.equals(userRepo.existsByName(user.getName()))) {
+			return ResponseEntity.badRequest().body(new MessageRespone("Error: Username is already taken!"));
+		}
+
+		if (Boolean.TRUE.equals(userRepo.existsByEmailId(user.getEmailId()))) {
+			return ResponseEntity.badRequest().body(new MessageRespone("Error: Email is already in use!"));
+		}
+
+		// Create new user's account
+		User userData = new User(user.getName(), user.getEmailId(), passwordEncoder.encode(user.getPassword()),
+				user.getAddress(), user.getState(), user.getCountry(), user.getPan(), user.getContactNo(),
+				user.getDateOfBirth(), user.getRole());
+		int age = Period.between(user.getDateOfBirth(), LocalDate.now()).getYears();
+		if (age > 18) {
+			userRepo.save(userData);
+			return ResponseEntity.ok(new MessageRespone("Success: User registered successfully!"));
+		} else {
+			return ResponseEntity.badRequest().body(new MessageRespone("Error: User not eligible to register!"));
+		}
+
+	}
+
+	@PostMapping("/authenticate")
+	public String generateToken(@RequestBody LoginRequest authRequest) throws Exception {
+		log.info("Authentication User!!");
+		try {
+			authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(authRequest.getUserName(), authRequest.getPassword()));
+		} catch (Exception ex) {
+			return "Invalid username/password";
+		}
+		return jwtUtils.generateToken(authRequest.getUserName());
+	}
+
+	@PostMapping({ "/signin" })
+	public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+		log.info("############UserController Login#########" + loginRequest.toString() + ":"
+				+ loginRequest.getUserName() + ":" + userRepo.findEmailId(loginRequest.getUserName()));
+
+		if (userRepo.findEmailId(loginRequest.getUserName()).isPresent()) {
+			User uData = userRepo.findEmailId(loginRequest.getUserName()).get();
+			if (uData.getEmailId().equals(loginRequest.getUserName())) {
+				log.info("u data" + loginRequest.toString());
+				return ResponseEntity.ok(loginRequest);
+			} else {
+				log.info("u error####");
+
+				return ResponseEntity.badRequest().body(new MessageRespone(
+						"Error: Crediantials doesn't match!! please enter valid username and password"));
+			}
+
+		} else {
+			return ResponseEntity.badRequest().body(new MessageRespone("Error: User not Registered!!"));
+		}
+	}
+
+	//@PreAuthorize("hasRole('ADMIN')")
+	@PostMapping("/admin/load")
+	public ResponseEntity<Load> createLoad(@Valid @RequestBody Load load) {
+		log.info("load data :" + load.toString());
+		log.info("###UserController -A- createload####");
+		Load loadD = userServiceImpl.saveLoad(load);
+
+		return new ResponseEntity<>(loadD, HttpStatus.CREATED);
+
+	}
+
+	@GetMapping("/admin/{userId}/allLoad")
+	public ResponseEntity<List<Load>> getAllLoad(@PathVariable("userId") int userId) {
+		ResponseEntity<List<Load>> response;
+		log.info("user controller#####" + userId);
+		List<Load> loadList = userServiceImpl.getAllLoad(userId);
+		response = new ResponseEntity<>(loadList, HttpStatus.OK);
+		return response;
+	}
+
+	@GetMapping("/search")
+	public ResponseEntity<List<Load>> searchLoad(@RequestParam(value="pickUpDate") String pickUpDate,
+			@RequestParam("pickUpLocation") String pickUpLocation, @RequestParam(value="dropDate",required = false) String dropDate,
+			@RequestParam("dropLocation") String dropLocation, @RequestParam("itemType") String itemType
+	// @RequestParam(value = "authorName,", required = false) String bookAuthor
+	) throws ParseException {
+		
+		ResponseEntity<List<Load>> response;
+		log.info("##user controller search load###");
+		log.info("##Drop and Pickup date is### "+pickUpDate+"-pickupDate-"+"dropdate-"+dropDate);
+		log.info("Load Type is :" + itemType);
+		List<Load> listOfLoad = userServiceImpl.searchLoads(pickUpDate, pickUpLocation, dropDate, dropLocation,
+				itemType);
+		response = new ResponseEntity<>(listOfLoad, HttpStatus.OK);
+		return response;
+	}
+	
+	@PutMapping({"/driver/{loadId}/bookload/{driverId}"})
+	   public ResponseEntity<?> bookLoad(@PathVariable Inetegr loadId, @PathVariable String driverId) {
+	       log.info("############UserController -R-booking load#########");
+	       return this.userServiceImpl.bookLoad(loadId,driverId);
+	   }
+	
+	
+	
+	
+	
+
+}

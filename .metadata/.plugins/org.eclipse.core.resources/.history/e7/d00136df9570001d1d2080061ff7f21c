@@ -1,0 +1,25 @@
+package com.load.repository;
+
+import java.time.LocalDate;
+
+import javax.transaction.Transactional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import com.load.entity.Load;
+
+@Repository
+@Transactional
+public interface LoadRepository extends JpaRepository<Load, Integer> {
+
+	@Modifying
+	@Query(value = "UPDATE truck_load SET driver_id=?1, booking_date=?2 ,booking_status=?3 WHERE load_id=?4", nativeQuery = true)
+	Integer bookLoad(Integer driverId, LocalDate now, String string, Integer loadId);
+	
+	@Query(value = "UPDATE truck_load SET driver_id=?1, booking_date=?2 ,booking_status=?3 WHERE load_id=?4", nativeQuery = true)
+	Integer cancelLoad(Integer driverId, LocalDate now, String string, Integer loadId);
+
+}
